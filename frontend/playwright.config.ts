@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
 	webServer: {
 		command: 'npm run build && npm run preview',
+		cwd: './frontend',
 		port: 4173
 	},
-	testDir: 'e2e'
+	testDir: './frontend/e2e'
 });
