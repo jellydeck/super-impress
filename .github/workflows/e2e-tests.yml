@@ -1,13 +1,14 @@
 name: E2E Tests
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main]
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -32,11 +33,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Python environment
+      # STEP 1: Setup and Start Backend + DB
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -44,20 +45,6 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "backend/uv.lock"
 
-      # Setup Node/pnpm environment
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '21'
-          cache: 'pnpm'
-          cache-dependency-path: frontend/pnpm-lock.yaml
-
-      # Setup backend
       - name: Install backend dependencies
         working-directory: ./backend
         run: uv sync
@@ -70,17 +57,28 @@ jobs:
         working-directory: ./backend
         run: |
           uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          echo $! > $GITHUB_WORKSPACE/backend.pid
           sleep 3
 
-      - name: Wait for backend
+      - name: Wait for backend to be ready
         uses: jtalk/url-health-check-action@v4
         with:
           url: http://localhost:8000/api/test
           max-attempts: 30
           retry-delay: 2s
 
-      # Setup frontend and run tests
+      # STEP 2: Setup Frontend Environment
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: pnpm install
@@ -89,13 +87,11 @@ jobs:
         working-directory: ./frontend
         run: pnpm exec playwright install --with-deps chromium
 
+      # STEP 3: Run E2E Tests
       - name: Run E2E tests
         working-directory: ./frontend
-        env:
-          VITE_API_BASE: http://localhost:8000
         run: pnpm test:e2e
 
-      # Upload artifacts on failure
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
         if: failure()
@@ -103,11 +99,3 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
-
-      # Cleanup
-      - name: Stop backend server
-        if: always()
-        run: |
-          if [ -f $GITHUB_WORKSPACE/backend.pid ]; then
-            kill $(cat $GITHUB_WORKSPACE/backend.pid) 2>/dev/null || true
-          fi
