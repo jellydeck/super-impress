@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import Input from '$lib/components/ui/input.svelte';
+	import Label from '$lib/components/ui/label.svelte';
 	import AuthLayout from '$lib/layouts/auth-layout.svelte';
+	import { cn } from '$lib/utils/cn';
 	import { createForm } from '@tanstack/svelte-form';
 	import { createMutation } from '@tanstack/svelte-query';
 	import z from 'zod';
@@ -54,14 +57,13 @@
 
 			<form.Field name="email">
 				{#snippet children(field)}
-					<label for={field.name} class="label">Email</label>
-					<input
+					<Label for={field.name}>Email</Label>
+					<Input
 						id={field.name}
 						name={field.name}
 						value={field.state.value}
 						type="email"
-						class="input"
-						class:input-error={field.state.meta.isTouched && !field.state.meta.isValid}
+						class={cn(field.state.meta.isTouched && !field.state.meta.isValid && 'input-error')}
 						aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
 						autocomplete="email"
 						onchange={(e) => {
@@ -76,14 +78,13 @@
 
 			<form.Field name="password">
 				{#snippet children(field)}
-					<label for={field.name} class="label">Password</label>
-					<input
+					<Label for={field.name}>Password</Label>
+					<Input
 						id={field.name}
 						name={field.name}
 						value={field.state.value}
 						type="password"
-						class="input"
-						class:input-error={field.state.meta.isTouched && !field.state.meta.isValid}
+						class={cn(field.state.meta.isTouched && !field.state.meta.isValid && 'input-error')}
 						aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
 						autocomplete="current-password"
 						onchange={(e) => {
