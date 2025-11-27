@@ -67,6 +67,11 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm exec playwright install --with-deps
 
+      - name: Create frontend env file
+        working-directory: ./frontend
+        run: |
+          echo "VITE_API_BASE=http://localhost:8000" > .env
+
       - name: Run E2E tests
         working-directory: ./frontend
         run: pnpm run test:e2e
